@@ -518,31 +518,43 @@ func (c Converter) k8sRuleToCalico(rPeers []networkingv1.NetworkPolicyPeer, rPor
 			selector, nsSelector, nets, notNets := c.k8sPeerToCalicoFields(peer, ns)
 			if ingress {
 				// Build inbound rule and append to list.
+				source := apiv3.EntityRule{
+					Selector:          selector,
+					NamespaceSelector: nsSelector,
+					Nets:              nets,
+					NotNets:           notNets,
+				}
+				destination := apiv3.EntityRule{
+					Ports: calicoPorts,
+				}
 				rules = append(rules, apiv3.Rule{
-					Action:   "Allow",
-					Protocol: protocol,
-					Source: apiv3.EntityRule{
-						Selector:          selector,
-						NamespaceSelector: nsSelector,
-						Nets:              nets,
-						NotNets:           notNets,
-					},
-					Destination: apiv3.EntityRule{
-						Ports: calicoPorts,
-					},
+					Action:      "Allow",
+					Protocol:    protocol,
+					Source:      source,
+					Destination: destination,
+				}, apiv3.Rule{
+					Action:      "Log",
+					Protocol:    protocol,
+					Source:      source,
+					Destination: destination,
 				})
 			} else {
 				// Build outbound rule and append to list.
+				destination := apiv3.EntityRule{
+					Ports:             calicoPorts,
+					Selector:          selector,
+					NamespaceSelector: nsSelector,
+					Nets:              nets,
+					NotNets:           notNets,
+				}
 				rules = append(rules, apiv3.Rule{
-					Action:   "Allow",
-					Protocol: protocol,
-					Destination: apiv3.EntityRule{
-						Ports:             calicoPorts,
-						Selector:          selector,
-						NamespaceSelector: nsSelector,
-						Nets:              nets,
-						NotNets:           notNets,
-					},
+					Action:      "Allow",
+					Protocol:    protocol,
+					Destination: destination,
+				}, apiv3.Rule{
+					Action:      "Log",
+					Protocol:    protocol,
+					Destination: destination,
 				})
 			}
 		}
